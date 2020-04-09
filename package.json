@@ -1,0 +1,14 @@
+{
+  "name": "ledger-token-signer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@types/elliptic": "^6.4.12",
+    "@types/node": "^13.11.0",
+    "@types/secp256k1": "^4.0.0",
+    "crypto": "^1.0.1",
+    "elliptic": "^6.5.2",
+    "secp256k1": "^4.0.0"
+  }
+}
