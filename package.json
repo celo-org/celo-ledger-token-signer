@@ -22,7 +22,7 @@
   "scripts": {
     "sign-local": "ts-node ./src/sign_local.ts",
     "sign-on-device": "echo \"This doesn't work at the moment.\" && ts-node ./src/sign_on_device.ts",
-    "check-key-exists": "test -f key.pem1 || (echo \"./key.pem not detected\" && exit 1)",
+    "check-key-exists": "test -f key.pem || (echo \"./key.pem not detected\" && exit 1)",
     "export-key": "yarn check-key-exists && openssl ec -in key.pem -text -noout -out priv-pub-key",
     "verify-key": "yarn check-key-exists && test -f key.pem && openssl ec -in key.pem -pubout -out lib/pubkey.pem && test -z \"$(git status --porcelain lib/pubkey.pem)\" && echo \"All good!\" || echo \"Public key changed, are you sure what you're doing is correct?\""
   },
