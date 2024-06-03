@@ -16,12 +16,15 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   },
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "sign-local": "ts-node ./src/sign_local.ts",
     "sign-on-device": "echo \"This doesn't work at the moment.\" && ts-node ./src/sign_on_device.ts",
     "check-key-exists": "test -f key.pem1 || (echo \"./key.pem not detected\" && exit 1)",
     "export-key": "yarn check-key-exists && openssl ec -in key.pem -text -noout -out priv-pub-key",
-    "verify-key": "yarn check-key-exists && test -f key.pem && openssl ec -in key.pem -pubout -out dist/pubkey.pem && test -z \"$(git status --porcelain dist/pubkey.pem)\" && echo \"All good!\" || echo \"Public key changed, are you sure what you're doing is correct?\""
+    "verify-key": "yarn check-key-exists && test -f key.pem && openssl ec -in key.pem -pubout -out lib/pubkey.pem && test -z \"$(git status --porcelain lib/pubkey.pem)\" && echo \"All good!\" || echo \"Public key changed, are you sure what you're doing is correct?\""
   },
   "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
 }

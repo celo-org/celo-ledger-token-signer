@@ -23,7 +23,15 @@ async function main() {
   const finalBuf = await sign(localSign, keys.public, tokens);
   console.log("BASE64 blob to be stored in the monorepo:");
   console.log(finalBuf);
+  fs.writeFileSync("./lib/data.ts", `export default "${finalBuf}"`, {
+    encoding: "utf8",
+  });
   console.log("\n--- END SIGNING DATA BLOB FOR LEDGER ERC20 DATA ---\n");
+
+  if (process.env.CI) {
+    console.log("CI detected, can't verify on device");
+    process.exit(0);
+  }
 
   console.log("--- BEGIN VERIFYING DATA BLOB WITH CONNECTED LEDGER ---\n");
   try {
