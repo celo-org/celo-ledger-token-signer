@@ -3,10 +3,11 @@ name: Update ERC20 data
 on:
   workflow_call:
   workflow_dispatch:
+  push:
 
 jobs:
   publish:
-    runs-on: ["self-hosted", "org", "npm-publish"]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       id-token: write
@@ -15,8 +16,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Get NPM Token from Akeyless
         id: get_npmjs_token
