@@ -6,7 +6,10 @@
     "noUnusedParameters": true,
     "strictPropertyInitialization": true,
     "esModuleInterop": true,
-    "strict": true
+    "strict": true,
+    "sourceMap": true,
+    "declaration": true
   },
-  "exclude": ["node_modules", "lib"]
+  "include": ["lib/data.ts"],
+  "exclude": ["src", "node_modules"]
 }

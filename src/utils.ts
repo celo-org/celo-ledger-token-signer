@@ -76,7 +76,7 @@ export function formatKey(point: AffinePoint<bigint>) {
 }
 
 // Copied from https://github.com/LedgerHQ/ledger-live/blob/develop/libs/ledgerjs/packages/hw-app-eth/src/services/ledger/erc20.ts
-const parseNewData = (erc20SignaturesBlob: string) => {
+export const parseNewData = (erc20SignaturesBlob: string) => {
   const asContractAddress = (addr: string) => {
     const a = addr.toLowerCase();
     return a.startsWith("0x") ? a : "0x" + a;
@@ -111,6 +111,8 @@ const parseNewData = (erc20SignaturesBlob: string) => {
       chainId,
       signature,
       data: item,
+      data_b64: item.toString("base64"),
+      data_hex: item.toString("hex"),
     };
     entries.push(entry);
     i += length;

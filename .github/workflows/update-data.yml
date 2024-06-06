@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    runs-on:  ['self-hosted', 'org', 'npm-publish']
+    runs-on: ["self-hosted", "org", "npm-publish"]
     permissions:
       contents: write
       id-token: write
@@ -46,7 +46,9 @@ jobs:
 
       - name: Export data
         id: export_Data
-        run: yarn sign-local
+        run: |
+          yarn sign-local
+          yarn build
 
       - name: Sets a flag if the data was changed
         id: diff_flag
@@ -58,17 +60,16 @@ jobs:
       - name: Bump version
         if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
         id: bump_version
-        run: echo "NPM_VERSION=$(npm version patch --no-git-tag-version)" >> $GITHUB_OUTPUT
+        run: echo "NPM_VERSION=$(npm version minor --no-git-tag-version)" >> $GITHUB_OUTPUT
 
       - name: Publish
         if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
-        run: "echo npm publish"
-        # run: npm publish --access public
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
-    #   - uses: stefanzweifel/git-auto-commit-action@v5
-    #     if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
-    #     with:
-    #       commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
-    #       tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
+        with:
+          commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
+          tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}
