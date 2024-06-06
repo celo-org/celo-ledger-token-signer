@@ -1,86 +1,62 @@
-import { ec as EC } from 'elliptic'
-const ec = new EC('secp256k1')
-const Signature = require('elliptic/lib/elliptic/ec/signature')
-import * as fs from 'fs'
-import TransportNodeHid from "@ledgerhq/hw-transport-node-hid"
-import Eth from "@ledgerhq/hw-app-eth"
+import * as fs from "fs";
+import {
+  KEY_PATH,
+  Token,
+  createTransport,
+  formatKey,
+  sign,
+  verifyData,
+} from "./utils";
+import { secp256k1 } from "@noble/curves/secp256k1";
+import Eth from "@ledgerhq/hw-app-eth";
 
-const keyPath = "44'/52752'/0'/0/0"
+async function main() {
+  const transport = await createTransport();
+  const ledger = new Eth(transport);
+  const pubKey = (await ledger.getAddress(KEY_PATH)).publicKey;
+  const point = secp256k1.ProjectivePoint.fromHex(pubKey);
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
+  console.log("--- BEGIN PUBLIC KEY VERIFICATION ---\n");
+  console.log("Using the ledger matching the following pubkey:");
+  console.log(formatKey(point));
+  console.log(
+    "Please make sure it matches the one in the celo-spender C application loaded onto the ledger device."
+  );
+  console.log("--- END PUBLIC KEY VERIFICATION ---\n");
 
-async function run() {
-  const tokens = JSON.parse(fs.readFileSync('tokens.json').toString())
+  console.log("--- BEGIN SIGNING DATA BLOB FOR LEDGER ERC20 DATA ---\n");
+  const tokens = JSON.parse(
+    fs.readFileSync("./tokens.json").toString()
+  ) as Token[];
 
-  const tokenBufs = []
-  
-  const transport = await TransportNodeHid.create()
-  const eth = new Eth(transport)
-  const pubKey = (await eth.getAddress(keyPath)).publicKey
+  // DISCLAIMER
+  // As it stands, this signing function CANNOT work as `signPersonalMessage` adds a prefix to the msg being signed
+  // and since this isn't expected by `provideERC20TokenInformation`'s implementation in the celo-spender app
+  // it just won't match.
+  // This file exists for legacy purposes as MAYBE it was signed via ledger
+  // but most likely was signed locally with and export hdwallet originating from ledger
+  const ledgerSign = (msgHash: string) =>
+    ledger.signPersonalMessage(KEY_PATH, msgHash).then(({ r, s }) => ({
+      r: BigInt(`0x${r}`),
+      s: BigInt(`0x${s}`),
+    }));
 
-  await sleep(1500)
+  const finalBuf = await sign(ledgerSign, pubKey, tokens);
+  console.log("BASE64 blob to be stored in the monorepo:");
+  console.log(finalBuf);
+  console.log("\n--- END SIGNING DATA BLOB FOR LEDGER ERC20 DATA ---\n");
 
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i]
-    const tickerLength = token.ticker.length
-
-    let bufLength = 0
-    bufLength += tickerLength // ticker length
-    bufLength += 20 // contract address, 20 bytes
-    bufLength += 4 // decimals, uint32
-    bufLength += 4 // chainId, uint32
-
-    const msg = Buffer.alloc(bufLength)
-
-    let offset = 0
-
-    const tickerBuf = Buffer.from(token.ticker, 'ascii')
-    for (let j = 0; j < tickerLength; j++) {
-      msg[offset + j] = tickerBuf[j]
-    }
-    offset += tickerLength
-    const addressBuf = Buffer.from(token.address, 'hex')
-    for (let j = 0; j < 20; j++) {
-      msg[offset + j] = addressBuf[j]
-    }
-    offset += 20
-    msg.writeUInt32BE(token.decimals, offset)
-    offset += 4
-    msg.writeUInt32BE(token.chainId, offset)
-    offset += 4
-
-    const msgHash = ec.hash().update(msg).digest()
-    console.log(`signing token "${token.ticker}" on address ${token.address} with ${token.decimals} decimals and chain ID ${token.chainId} having message hash: ${Buffer.from(msgHash).toString('hex')}`)
-
-    const key = ec.keyFromPublic(pubKey, 'hex')
-    const sig = await eth.signPersonalMessage(keyPath, msg)
-    const sigObj = new Signature({r: sig.r, s: sig.s})
-    if (!key.verify(msgHash, sigObj)) {
-      console.log(`problem with signature`)
-      process.exit(1)
-    }
-
-    const sigDer = sigObj.toDER()
-    const bufWithLengthAndSig = Buffer.alloc(4 + 1 + msg.length + sigDer.length)
-    bufWithLengthAndSig.writeUInt32BE(1 + msg.length + sigDer.length, 0)
-    bufWithLengthAndSig[4] = tickerLength
-    for (let j = 0; j < msg.length; j++) {
-      bufWithLengthAndSig[4 + 1 + j] = msg[j]
-    }
-    for (let j = 0; j < sigDer.length; j++) {
-      bufWithLengthAndSig[4 + 1 + msg.length + j] = sigDer[j]
-    }
-
-    tokenBufs.push(bufWithLengthAndSig)
+  console.log("--- BEGIN VERIFYING DATA BLOB WITH CONNECTED LEDGER ---\n");
+  try {
+    await verifyData(finalBuf, ledger);
+  } catch (e) {
+    console.error("Some tokens couldn't be verified");
+    throw e;
+  } finally {
+    console.log("--- END VERIFYING DATA BLOB WITH CONNECTED LEDGER ---");
   }
-
-  const finalBuf = Buffer.concat(tokenBufs)
-  console.log(`tokens: ${finalBuf.toString('base64')}`)
-
 }
 
-run()
-.then(() => {})
-.catch((e) => console.error(e))
+main().catch((e) => {
+  console.error(e);
+});

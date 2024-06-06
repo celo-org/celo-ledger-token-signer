@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "outDir": "dist",
+    "outDir": "lib",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strictPropertyInitialization": true,
     "esModuleInterop": true,
-    "strict": true
+    "strict": true,
+    "sourceMap": true,
+    "declaration": true
   },
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["lib/data.ts"],
+  "exclude": ["src", "node_modules"]
 }

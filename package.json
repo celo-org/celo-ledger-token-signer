@@ -1,17 +1,31 @@
 {
-  "name": "ledger-token-signer",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "@celo/ledger-token-signer",
+  "version": "0.1.0",
+  "main": "lib/data.js",
   "license": "MIT",
-  "dependencies": {
-    "@ledgerhq/hw-app-eth": "^5.13.0",
-    "@ledgerhq/hw-transport-node-hid": "^5.13.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@ledgerhq/hw-app-eth": "6.36.0",
+    "@ledgerhq/hw-transport-node-hid": "^6.28.6",
+    "@noble/curves": "^1.4.0",
+    "@noble/hashes": "^1.4.0",
     "@types/elliptic": "^6.4.12",
-    "@types/ledgerhq__hw-transport-node-hid": "^4.22.1",
     "@types/node": "^13.11.0",
     "@types/secp256k1": "^4.0.0",
-    "crypto": "^1.0.1",
-    "elliptic": "^6.5.2",
-    "secp256k1": "^4.0.0"
-  }
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "sign-local": "ts-node ./src/sign_local.ts",
+    "sign-on-device": "echo \"This doesn't work at the moment.\" && ts-node ./src/sign_on_device.ts",
+    "check-key-exists": "test -f key.pem || (echo \"./key.pem not detected\" && exit 1)",
+    "export-key": "yarn check-key-exists && openssl ec -in key.pem -text -noout -out priv-pub-key",
+    "verify-key": "yarn check-key-exists && test -f key.pem && openssl ec -in key.pem -pubout -out lib/pubkey.pem && test -z \"$(git status --porcelain lib/pubkey.pem)\" && echo \"All good!\" || echo \"Public key changed, are you sure what you're doing is correct?\"",
+    "print-data-blob": "ts-node ./src/print_data_blob.ts",
+    "build": "yarn run tsc -b ."
+  },
+  "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
 }

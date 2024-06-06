@@ -1,9 +1,5 @@
-import { ec as EC } from 'elliptic'
-const ec = new EC('secp256k1')
-import * as fs from 'fs'
-import {formatKey} from './print_key'
+import { secp256k1 } from "@noble/curves/secp256k1";
+import { formatKey, parseKey } from "./utils";
 
-const privKey = fs.readFileSync('key.json')
-const key = ec.keyFromPrivate(privKey)
-
-console.log(formatKey(key))
+const { private: _privKey, public: _pubKey } = parseKey("./priv-pub-key");
+console.log(formatKey(secp256k1.ProjectivePoint.fromHex(_pubKey)));

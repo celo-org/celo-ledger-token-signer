@@ -1,0 +1,76 @@
+name: Update ERC20 data
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+jobs:
+  publish:
+    runs-on: ["self-hosted", "org", "npm-publish"]
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+      repository-projects: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get NPM Token from Akeyless
+        id: get_npmjs_token
+        uses: docker://us-west1-docker.pkg.dev/devopsre/akeyless-public/akeyless-action:latest
+        with:
+          api-url: https://api.gateway.akeyless.celo-networks-dev.org
+          access-id: p-kf9vjzruht6l
+          static-secrets: |
+            {
+                "/static-secrets/NPM/npm-publish-token": "NPM_TOKEN",
+                "/static-secrets/dev-tooling-circle/ledger-key": "LEDGER_KEY"
+            }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: yarn
+
+      - name: Process privkey
+        run: |
+          echo "$PRIVATE_KEY" > ./key.pem
+          yarn verify-key
+          yarn export-key
+        env:
+          PRIVATE_KEY: ${{ env.LEDGER_KEY }}
+
+      - name: Export data
+        id: export_Data
+        run: |
+          yarn sign-local
+          yarn build
+
+      - name: Sets a flag if the data was changed
+        id: diff_flag
+        run: |
+          RESULT=$(git diff --name-only lib/data.ts)
+          [[ "$RESULT" = "" ]] && GIT_EXIT_CODE=0 || GIT_EXIT_CODE=1
+          echo "GIT_EXIT_CODE=$GIT_EXIT_CODE" >> $GITHUB_OUTPUT >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
+        id: bump_version
+        run: echo "NPM_VERSION=$(npm version minor --no-git-tag-version)" >> $GITHUB_OUTPUT
+
+      - name: Publish
+        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
+        with:
+          commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
+          tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}
