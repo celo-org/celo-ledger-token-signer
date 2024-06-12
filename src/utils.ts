@@ -4,7 +4,11 @@ import { AffinePoint } from "@noble/curves/abstract/curve";
 import { Hex } from "@noble/curves/abstract/utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { sha256 } from "@noble/hashes/sha256";
-import { readFileSync } from "fs";
+import { randomBytes } from "@noble/hashes/utils";
+import { execSync } from "child_process";
+import { readFileSync, unlinkSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 export const KEY_PATH = "44'/52752'/0'/0/0";
 
@@ -36,17 +40,35 @@ export type SignFn = (msgHash: string) => Promise<{ r: bigint; s: bigint }>;
 // `openssl ec -in key.pem -text -noout -out priv-pub-key`
 export function parseKey(filePath: string): Parsed {
   const file = readFileSync(filePath).toString("utf-8");
-  const size = parseInt(file.match(/Private-Key: \((\d+)/)![1], 10);
-  const priv = file.match(/priv:(.+)pub:/s)![1];
+  const size = parseInt(file.match(/(Private|Public)-Key: \((\d+)/)![2], 10);
+  const priv = file.match(/priv:(.+)pub:/s)?.[1];
   const pub = file.match(/pub:(.+)ASN1 OID:/s)![1];
   const type = file.match(/ASN1 OID:(.+)/)![1].trim();
 
   return {
-    private: Buffer.from(priv.replace(/[\s\n\:]/g, ""), "hex"),
+    private: Buffer.from((priv || "").replace(/[\s\n\:]/g, ""), "hex"),
     public: Buffer.from(pub.replace(/[\s\n\:]/g, ""), "hex"),
     size,
     type,
   };
+}
+
+// `openssl ec -in key.pem -text -noout -out priv-pub-key`
+export function parseKsmKey(pem: string): Parsed {
+  const tmpPem =
+    join(tmpdir(), Buffer.from(randomBytes(16)).toString("hex")) + ".pem";
+  const tmpPub =
+    join(tmpdir(), Buffer.from(randomBytes(16)).toString("hex")) + ".pub";
+  writeFileSync(tmpPem, pem);
+
+  execSync(`openssl ec -pubin -in ${tmpPem} -text -noout -out ${tmpPub}`);
+
+  const result = parseKey(tmpPub);
+
+  unlinkSync(tmpPem);
+  unlinkSync(tmpPub);
+
+  return result;
 }
 
 // This function exports a public key into the format used in ledger

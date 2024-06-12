@@ -5,6 +5,8 @@
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
+    "@celo/abis": "^11.0.0",
+    "@google-cloud/kms": "^4.4.0",
     "@ledgerhq/hw-app-eth": "6.36.0",
     "@ledgerhq/hw-transport-node-hid": "^6.28.6",
     "@noble/curves": "^1.4.0",

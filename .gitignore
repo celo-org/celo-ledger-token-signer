@@ -2,3 +2,4 @@ node_modules
 key.json
 key.pem
 priv-pub-key
+gcloud-credentials.json
