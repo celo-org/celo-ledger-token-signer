@@ -40,8 +40,8 @@ jobs:
         name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          project_id: "TODO"
-          workload_identity_provider: "TODO"
+          service_account: "gh-celo-ledger-token-signer@clabs-secrets-and-permissions.iam.gserviceaccount.com"
+          workload_identity_provider: "projects/1094498259535/locations/global/workloadIdentityPools/gh-celo-ledger-token-signer/providers/github-by-repos"
 
       - name: Export data
         id: export_Data
@@ -49,11 +49,11 @@ jobs:
           yarn sign-hsm
           yarn build
         env:
-          GCLOUD_PROJECT_ID: "TODO"
-          GCLOUD_LOCATION_ID: "TODO"
-          GCLOUD_KEY_RING_ID: "TODO"
-          GCLOUD_KEY_ID: "TODO"
-          GCLOUD_VERSION_ID: "TODO"
+          GCLOUD_PROJECT_ID: "clabs-secrets-and-permissions"
+          GCLOUD_LOCATION_ID: "us-west1"
+          GCLOUD_KEY_RING_ID: "clabs-ledger-app-tokens-signing-keyring"
+          GCLOUD_KEY_ID: "clabs-ledger-app-tokens-signing-key"
+          GCLOUD_VERSION_ID: "1"
 
       - name: Sets a flag if the data was changed
         id: diff_flag
