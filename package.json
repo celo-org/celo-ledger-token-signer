@@ -5,6 +5,8 @@
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
+    "@celo/abis": "^11.0.0",
+    "@google-cloud/kms": "^4.4.0",
     "@ledgerhq/hw-app-eth": "6.36.0",
     "@ledgerhq/hw-transport-node-hid": "^6.28.6",
     "@noble/curves": "^1.4.0",
@@ -19,6 +21,7 @@
     "lib"
   ],
   "scripts": {
+    "sign-hsm": "ts-node ./src/sign_hsm.ts",
     "sign-local": "ts-node ./src/sign_local.ts",
     "sign-on-device": "echo \"This doesn't work at the moment.\" && ts-node ./src/sign_on_device.ts",
     "check-key-exists": "test -f key.pem || (echo \"./key.pem not detected\" && exit 1)",

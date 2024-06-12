@@ -8,7 +8,8 @@
     "esModuleInterop": true,
     "strict": true,
     "sourceMap": true,
-    "declaration": true
+    "declaration": true,
+    "target": "ES2020"
   },
   "include": ["lib/data.ts"],
   "exclude": ["src", "node_modules"]

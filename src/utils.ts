@@ -4,7 +4,11 @@ import { AffinePoint } from "@noble/curves/abstract/curve";
 import { Hex } from "@noble/curves/abstract/utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { sha256 } from "@noble/hashes/sha256";
-import { readFileSync } from "fs";
+import { randomBytes } from "@noble/hashes/utils";
+import { execSync } from "child_process";
+import { readFileSync, unlinkSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 export const KEY_PATH = "44'/52752'/0'/0/0";
 
@@ -36,17 +40,35 @@ export type SignFn = (msgHash: string) => Promise<{ r: bigint; s: bigint }>;
 // `openssl ec -in key.pem -text -noout -out priv-pub-key`
 export function parseKey(filePath: string): Parsed {
   const file = readFileSync(filePath).toString("utf-8");
-  const size = parseInt(file.match(/Private-Key: \((\d+)/)![1], 10);
-  const priv = file.match(/priv:(.+)pub:/s)![1];
+  const size = parseInt(file.match(/(Private|Public)-Key: \((\d+)/)![2], 10);
+  const priv = file.match(/priv:(.+)pub:/s)?.[1];
   const pub = file.match(/pub:(.+)ASN1 OID:/s)![1];
   const type = file.match(/ASN1 OID:(.+)/)![1].trim();
 
   return {
-    private: Buffer.from(priv.replace(/[\s\n\:]/g, ""), "hex"),
+    private: Buffer.from((priv || "").replace(/[\s\n\:]/g, ""), "hex"),
     public: Buffer.from(pub.replace(/[\s\n\:]/g, ""), "hex"),
     size,
     type,
   };
+}
+
+// `openssl ec -in key.pem -text -noout -out priv-pub-key`
+export function parseKsmKey(pem: string): Parsed {
+  const tmpPem =
+    join(tmpdir(), Buffer.from(randomBytes(16)).toString("hex")) + ".pem";
+  const tmpPub =
+    join(tmpdir(), Buffer.from(randomBytes(16)).toString("hex")) + ".pub";
+  writeFileSync(tmpPem, pem);
+
+  execSync(`openssl ec -pubin -in ${tmpPem} -text -noout -out ${tmpPub}`);
+
+  const result = parseKey(tmpPub);
+
+  unlinkSync(tmpPem);
+  unlinkSync(tmpPub);
+
+  return result;
 }
 
 // This function exports a public key into the format used in ledger
@@ -129,7 +151,7 @@ export const parseNewData = (erc20SignaturesBlob: string) => {
 //      signature = secp256k1.sign(sha256(data))
 //      Buffer[data.length, ticker.length, data, signature]
 export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
-  const tokenBufs = [];
+  const tokenBufs = [] as Buffer[];
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
@@ -190,7 +212,11 @@ export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
 
 // This function is a sanity check and feeds the data signed in `sign` back to
 // ledger to make sure it works
-export async function verifyData(base64Data: string, ledger?: Eth) {
+export async function verifyData(
+  base64Data: string,
+  ledger?: Eth,
+  verbose = false
+) {
   if (!ledger) {
     const transport = await createTransport();
     ledger = new Eth(transport);
@@ -200,6 +226,13 @@ export async function verifyData(base64Data: string, ledger?: Eth) {
   for (const tokenInfo of data.list()) {
     try {
       await ledger.provideERC20TokenInformation(tokenInfo.data.toString("hex"));
+      if (verbose) {
+        console.log(
+          `verified: ${tokenInfo.ticker}, ${tokenInfo.address}, ${
+            tokenInfo.chainId
+          }, ${tokenInfo.data.toString("hex")}`
+        );
+      }
     } catch (e) {
       console.log("failed to verify", tokenInfo);
       throw e;
