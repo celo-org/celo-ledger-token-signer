@@ -69,13 +69,12 @@ jobs:
 
       - name: Publish
         if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
-        run: 'echo "would have published"'
-        # run: npm publish --access public
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
-      # - uses: stefanzweifel/git-auto-commit-action@v5
-      #   if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
-      #   with:
-      #     commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
-      #     tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
+        with:
+          commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
+          tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}

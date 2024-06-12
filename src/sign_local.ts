@@ -2,6 +2,7 @@ import * as fs from "fs";
 import { Token, formatKey, parseKey, sign, verifyData } from "./utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { Hex } from "@noble/curves/abstract/utils";
+import { verifyDataIntegrity } from "./verify_data_integrity";
 
 async function main() {
   console.log("--- BEGIN PUBLIC KEY VERIFICATION ---\n");
@@ -33,15 +34,7 @@ async function main() {
     process.exit(0);
   }
 
-  console.log("--- BEGIN VERIFYING DATA BLOB WITH CONNECTED LEDGER ---\n");
-  try {
-    await verifyData(finalBuf);
-  } catch (e) {
-    console.error("Some tokens couldn't be verified");
-    throw e;
-  } finally {
-    console.log("--- END VERIFYING DATA BLOB WITH CONNECTED LEDGER ---");
-  }
+  await verifyDataIntegrity(finalBuf);
 }
 
 main().catch((e) => {

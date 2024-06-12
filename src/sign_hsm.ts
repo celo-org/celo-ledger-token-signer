@@ -3,6 +3,7 @@ import { Token, formatKey, parseKsmKey, sign, verifyData } from "./utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { Hex } from "@noble/curves/abstract/utils";
 import { fetchPublicKey, kmsSign } from "./config/google-cloud/kms";
+import { verifyDataIntegrity } from "./verify_data_integrity";
 
 const projectId =
   process.env.GCLOUD_PROJECT_ID || "blockchaintestsglobaltestnet";
@@ -39,22 +40,17 @@ async function main() {
   const finalBuf = await sign(hsmSign, keys.public, tokens);
   console.log("BASE64 blob to be stored in the monorepo:");
   console.log(finalBuf);
-  console.log("\n--- END KSM SIGNING DATA BLOB FOR LEDGER ERC20 DATA ---\n");
+  fs.writeFileSync("./lib/data.ts", `export default "${finalBuf}"`, {
+    encoding: "utf8",
+  });
 
+  console.log("\n--- END KSM SIGNING DATA BLOB FOR LEDGER ERC20 DATA ---\n");
   if (process.env.CI) {
     console.log("CI detected, can't verify on physical device");
     process.exit(0);
   }
 
-  console.log("--- BEGIN VERIFYING DATA BLOB WITH CONNECTED LEDGER ---\n");
-  try {
-    await verifyData(finalBuf);
-  } catch (e) {
-    console.error("Some tokens couldn't be verified");
-    throw e;
-  } finally {
-    console.log("--- END VERIFYING DATA BLOB WITH CONNECTED LEDGER ---");
-  }
+  await verifyDataIntegrity(finalBuf);
 }
 
 main();
