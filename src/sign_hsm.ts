@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { Token, formatKey, parseKsmKey, sign, verifyData } from "./utils";
+import { Token, formatKey, parseKsmKey, sign } from "./utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { Hex } from "@noble/curves/abstract/utils";
 import { fetchPublicKey, kmsSign } from "./config/google-cloud/kms";
