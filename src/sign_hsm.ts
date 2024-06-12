@@ -41,6 +41,11 @@ async function main() {
   console.log(finalBuf);
   console.log("\n--- END KSM SIGNING DATA BLOB FOR LEDGER ERC20 DATA ---\n");
 
+  if (process.env.CI) {
+    console.log("CI detected, can't verify on physical device");
+    process.exit(0);
+  }
+
   console.log("--- BEGIN VERIFYING DATA BLOB WITH CONNECTED LEDGER ---\n");
   try {
     await verifyData(finalBuf);
