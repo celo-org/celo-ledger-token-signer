@@ -21,6 +21,7 @@
     "lib"
   ],
   "scripts": {
+    "sign-hsm": "ts-node ./src/sign_hsm.ts",
     "sign-local": "ts-node ./src/sign_local.ts",
     "sign-on-device": "echo \"This doesn't work at the moment.\" && ts-node ./src/sign_on_device.ts",
     "check-key-exists": "test -f key.pem || (echo \"./key.pem not detected\" && exit 1)",

@@ -3,3 +3,5 @@ key.json
 key.pem
 priv-pub-key
 gcloud-credentials.json
+# Ignore generated credentials from google-github-actions/auth
+gha-creds-*.json

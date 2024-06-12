@@ -4,7 +4,7 @@ on:
   workflow_call:
   workflow_dispatch:
   push:
-    branches: [master]
+    # branches: [master]
 
 jobs:
   publish:
@@ -37,19 +37,24 @@ jobs:
 
       - run: yarn
 
-      - name: Process privkey
-        run: |
-          echo "$PRIVATE_KEY" > ./key.pem
-          yarn verify-key
-          yarn export-key
-        env:
-          PRIVATE_KEY: ${{ env.LEDGER_KEY }}
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: "TODO"
+          workload_identity_provider: "TODO"
 
       - name: Export data
         id: export_Data
         run: |
-          yarn sign-local
+          yarn sign-hsm
           yarn build
+        env:
+          GCLOUD_PROJECT_ID: "TODO"
+          GCLOUD_LOCATION_ID: "TODO"
+          GCLOUD_KEY_RING_ID: "TODO"
+          GCLOUD_KEY_ID: "TODO"
+          GCLOUD_VERSION_ID: "TODO"
 
       - name: Sets a flag if the data was changed
         id: diff_flag
@@ -65,12 +70,13 @@ jobs:
 
       - name: Publish
         if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
-        run: npm publish --access public
+        run: 'echo "would have published"'
+        # run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
-        with:
-          commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
-          tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}
+      # - uses: stefanzweifel/git-auto-commit-action@v5
+      #   if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
+      #   with:
+      #     commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
+      #     tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}
