@@ -17,7 +17,6 @@ async function main() {
     keyId,
     versionId,
   };
-  console.log("--- BEGIN PUBLIC KEY VERIFICATION ---\n");
   const [pubKey] = await fetchPublicKey(key);
   const keys = parseKsmKey(pubKey.pem!);
 

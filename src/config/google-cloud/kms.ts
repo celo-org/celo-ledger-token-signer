@@ -1,7 +1,6 @@
 import { KeyManagementServiceClient } from "@google-cloud/kms";
 import { secp256k1 } from "@noble/curves/secp256k1";
 const client = new KeyManagementServiceClient();
-console.log(client.auth.cachedCredential);
 
 export interface Key {
   projectId: string;
