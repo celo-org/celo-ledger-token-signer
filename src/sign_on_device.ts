@@ -1,12 +1,5 @@
 import * as fs from "fs";
-import {
-  KEY_PATH,
-  Token,
-  createTransport,
-  formatKey,
-  sign,
-  verifyData,
-} from "./utils";
+import { KEY_PATH, Token, createTransport, formatKey, sign } from "./utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import Eth from "@ledgerhq/hw-app-eth";
 import { verifyDataIntegrity } from "./verify_data_integrity";
