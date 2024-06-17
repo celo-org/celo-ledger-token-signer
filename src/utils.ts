@@ -176,6 +176,7 @@ export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
     offset += CHAIN_ID_BYTE_LENGTH;
 
     const msgHash = Buffer.from(sha256(msg));
+    console.log(msgHash.toString("hex"));
     const { r, s } = await sign(msgHash.toString("hex"));
     const sig = new secp256k1.Signature(r, s);
     const valid = secp256k1.verify(sig, msgHash, pubKey, { lowS: false });

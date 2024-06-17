@@ -36,10 +36,14 @@ async function main() {
   // This file exists for legacy purposes as MAYBE it was signed via ledger
   // but most likely was signed locally with and export hdwallet originating from ledger
   const ledgerSign = (msgHash: string) =>
-    ledger.signPersonalMessage(KEY_PATH, msgHash).then(({ r, s }) => ({
-      r: BigInt(`0x${r}`),
-      s: BigInt(`0x${s}`),
-    }));
+    ledger.signPersonalMessage(KEY_PATH, msgHash).then(
+      ({ r, s }) =>
+        // @ts-expect-error
+        console.log({ r, s }) || {
+          r: BigInt(`0x${r}`),
+          s: BigInt(`0x${s}`),
+        }
+    );
 
   const finalBuf = await sign(ledgerSign, pubKey, tokens);
   console.log("BASE64 blob to be stored in the monorepo:");
