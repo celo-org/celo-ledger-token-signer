@@ -39,10 +39,17 @@ export async function kmsSign(key: Key, hash: Buffer) {
       sha256: hash,
     },
   });
+  const [signResponse1] = await client.asymmetricSign({
+    name,
+    data: hash,
+  });
+
+  console.log(signResponse, signResponse1);
 
   if (signResponse.name !== name) {
     throw new Error("AsymmetricSign: request corrupted in-transit");
   }
 
+  console.log(signResponse);
   return secp256k1.Signature.fromDER(signResponse.signature!);
 }

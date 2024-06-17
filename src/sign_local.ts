@@ -1,8 +1,8 @@
 import * as fs from "fs";
-import { Token, formatKey, parseKey, sign, verifyData } from "./utils";
+import { Token, formatKey, parseKey, sign } from "./utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
-import { Hex } from "@noble/curves/abstract/utils";
 import { verifyDataIntegrity } from "./verify_data_integrity";
+import { sha256 } from "@noble/hashes/sha256";
 
 async function main() {
   console.log("--- BEGIN PUBLIC KEY VERIFICATION ---\n");
@@ -19,8 +19,10 @@ async function main() {
     fs.readFileSync("./tokens.json").toString()
   ) as Token[];
 
-  const localSign = (msgHash: Hex) =>
-    Promise.resolve(secp256k1.sign(msgHash, keys.private, { lowS: false }));
+  const localSign = (msg: Buffer) =>
+    Promise.resolve(
+      secp256k1.sign(Buffer.from(sha256(msg)), keys.private, { lowS: true })
+    );
   const finalBuf = await sign(localSign, keys.public, tokens);
   console.log("BASE64 blob to be stored in the monorepo:");
   console.log(finalBuf);
@@ -34,7 +36,7 @@ async function main() {
     process.exit(0);
   }
 
-  await verifyDataIntegrity(finalBuf);
+  await verifyDataIntegrity(finalBuf, keys.public);
 }
 
 main().catch((e) => {

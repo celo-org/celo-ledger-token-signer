@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { Token, formatKey, parseKsmKey, sign } from "./utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
-import { Hex } from "@noble/curves/abstract/utils";
+import { sha256 } from "@noble/hashes/sha256";
 import { fetchPublicKey, kmsSign } from "./config/google-cloud/kms";
 import { verifyDataIntegrity } from "./verify_data_integrity";
 
@@ -35,8 +35,7 @@ async function main() {
     fs.readFileSync("./tokens.json").toString()
   ) as Token[];
 
-  const hsmSign = (msgHash: Hex) =>
-    kmsSign(key, Buffer.from(msgHash as string, "hex"));
+  const hsmSign = async (msg: Buffer) => kmsSign(key, Buffer.from(sha256(msg)));
   const finalBuf = await sign(hsmSign, keys.public, tokens);
   console.log("BASE64 blob to be stored in the monorepo:");
   console.log(finalBuf);
@@ -50,7 +49,7 @@ async function main() {
     process.exit(0);
   }
 
-  await verifyDataIntegrity(finalBuf);
+  await verifyDataIntegrity(finalBuf, keys.public);
 }
 
 main();

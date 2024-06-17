@@ -5,6 +5,8 @@ on:
   workflow_dispatch:
   push:
     branches: [master]
+    paths:
+      - tokens.json
 
 jobs:
   publish:
@@ -55,26 +57,16 @@ jobs:
           GCLOUD_KEY_ID: "clabs-ledger-app-tokens-signing-key"
           GCLOUD_VERSION_ID: "1"
 
-      - name: Sets a flag if the data was changed
-        id: diff_flag
-        run: |
-          RESULT=$(git diff --name-only lib/data.ts)
-          [[ "$RESULT" = "" ]] && GIT_EXIT_CODE=0 || GIT_EXIT_CODE=1
-          echo "GIT_EXIT_CODE=$GIT_EXIT_CODE" >> $GITHUB_OUTPUT >> $GITHUB_OUTPUT
-
       - name: Bump version
-        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
         id: bump_version
         run: echo "NPM_VERSION=$(npm version minor --no-git-tag-version)" >> $GITHUB_OUTPUT
 
       - name: Publish
-        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
       - uses: stefanzweifel/git-auto-commit-action@v5
-        if: ${{ steps.diff_flag.outputs.GIT_EXIT_CODE == 1}}
         with:
           commit_message: "auto: publish ${{ steps.bump_version.outputs.NPM_VERSION }}"
           tagging_message: ${{ steps.bump_version.outputs.NPM_VERSION }}

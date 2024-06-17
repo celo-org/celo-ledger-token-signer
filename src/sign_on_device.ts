@@ -9,6 +9,7 @@ import {
 } from "./utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import Eth from "@ledgerhq/hw-app-eth";
+import { verifyDataIntegrity } from "./verify_data_integrity";
 
 async function main() {
   const transport = await createTransport();
@@ -33,13 +34,15 @@ async function main() {
   // As it stands, this signing function CANNOT work as `signPersonalMessage` adds a prefix to the msg being signed
   // and since this isn't expected by `provideERC20TokenInformation`'s implementation in the celo-spender app
   // it just won't match.
-  // This file exists for legacy purposes as MAYBE it was signed via ledger
-  // but most likely was signed locally with and export hdwallet originating from ledger
-  const ledgerSign = (msgHash: string) =>
-    ledger.signPersonalMessage(KEY_PATH, msgHash).then(({ r, s }) => ({
-      r: BigInt(`0x${r}`),
-      s: BigInt(`0x${s}`),
-    }));
+  // In order to make this function work you need to modify `handleSignPersonalMessage` and add
+  // `memcpy(tmpCtx.messageSigningContext.hash, hashMessage, 32);` at line 466
+  const ledgerSign = (msg: Buffer) =>
+    ledger
+      .signPersonalMessage(KEY_PATH, msg.toString("hex"))
+      .then(({ r, s }) => ({
+        r: BigInt(`0x${r}`),
+        s: BigInt(`0x${s}`),
+      }));
 
   const finalBuf = await sign(ledgerSign, pubKey, tokens);
   console.log("BASE64 blob to be stored in the monorepo:");
@@ -48,7 +51,7 @@ async function main() {
 
   console.log("--- BEGIN VERIFYING DATA BLOB WITH CONNECTED LEDGER ---\n");
   try {
-    await verifyData(finalBuf, ledger);
+    await verifyDataIntegrity(finalBuf, pubKey);
   } catch (e) {
     console.error("Some tokens couldn't be verified");
     throw e;

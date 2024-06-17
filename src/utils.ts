@@ -3,7 +3,6 @@ import TransportNodeHid from "@ledgerhq/hw-transport-node-hid";
 import { AffinePoint } from "@noble/curves/abstract/curve";
 import { Hex } from "@noble/curves/abstract/utils";
 import { secp256k1 } from "@noble/curves/secp256k1";
-import { sha256 } from "@noble/hashes/sha256";
 import { randomBytes } from "@noble/hashes/utils";
 import { execSync } from "child_process";
 import { readFileSync, unlinkSync, writeFileSync } from "fs";
@@ -34,7 +33,7 @@ export interface TokenInformation extends Token {
   data: Buffer;
   signature: Buffer;
 }
-export type SignFn = (msgHash: string) => Promise<{ r: bigint; s: bigint }>;
+export type SignFn = (msg: Buffer) => Promise<{ r: bigint; s: bigint }>;
 
 // This parses the ouput of the following command
 // `openssl ec -in key.pem -text -noout -out priv-pub-key`
@@ -163,7 +162,7 @@ export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
     bufLength += DECIMALS_BYTE_LENGTH; // decimals, uint32
     bufLength += CHAIN_ID_BYTE_LENGTH; // chainId, uint32
 
-    const msg = Buffer.alloc(bufLength);
+    const msg = Buffer.alloc(bufLength, 0);
 
     let offset = 0;
     msg.write(token.ticker, offset, "ascii");
@@ -175,10 +174,12 @@ export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
     msg.writeUInt32BE(token.chainId, offset);
     offset += CHAIN_ID_BYTE_LENGTH;
 
-    const msgHash = Buffer.from(sha256(msg));
-    const { r, s } = await sign(msgHash.toString("hex"));
+    const { r, s } = await sign(msg);
     const sig = new secp256k1.Signature(r, s);
-    const valid = secp256k1.verify(sig, msgHash, pubKey, { lowS: false });
+    const valid = secp256k1.verify(sig, msg, pubKey, {
+      prehash: true,
+      lowS: true,
+    });
 
     if (!valid) {
       console.log(`/!\\ problem with signature /!\\`);
@@ -214,6 +215,7 @@ export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
 // ledger to make sure it works
 export async function verifyData(
   base64Data: string,
+  pubKey: Hex,
   ledger?: Eth,
   verbose = false
 ) {
@@ -225,6 +227,24 @@ export async function verifyData(
   const data = parseNewData(base64Data);
   for (const tokenInfo of data.list()) {
     try {
+      const signature = secp256k1.Signature.fromDER(
+        tokenInfo.signature.toString("hex")
+      );
+      // Get back the original message from the data
+      // This is redudant with what ledger device is
+      // doing but it's a sanity check
+      const msg = tokenInfo.data.slice(uint8, -tokenInfo.signature.byteLength);
+      const valid = secp256k1.verify(signature, msg.toString("hex"), pubKey, {
+        lowS: true,
+        prehash: true,
+      });
+
+      if (!valid) {
+        console.log(`/!\\ problem with signature /!\\`);
+        process.exit(1);
+      }
+      console.log("test");
+
       await ledger.provideERC20TokenInformation(tokenInfo.data.toString("hex"));
       if (verbose) {
         console.log(

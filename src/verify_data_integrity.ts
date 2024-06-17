@@ -1,10 +1,11 @@
+import { Hex } from "@noble/curves/abstract/utils";
 import blob from "../lib/data";
-import { verifyData } from "./utils";
+import { parseKey, verifyData } from "./utils";
 
-export async function verifyDataIntegrity(data: string) {
+export async function verifyDataIntegrity(data: string, pubKey: Hex) {
   console.log("--- BEGIN VERIFYING DATA BLOB WITH CONNECTED LEDGER ---\n");
   try {
-    await verifyData(data, undefined, true);
+    await verifyData(data, pubKey, undefined, true);
   } catch (e) {
     console.error("Some tokens couldn't be verified");
     throw e;
@@ -14,5 +15,6 @@ export async function verifyDataIntegrity(data: string) {
 }
 
 if (require.main === module) {
-  verifyDataIntegrity(blob);
+  const keys = parseKey("./priv-pub-key");
+  verifyDataIntegrity(blob, keys.public);
 }
