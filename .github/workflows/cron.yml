@@ -30,20 +30,12 @@ jobs:
           bun run fetch-token-list
           git diff
 
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "auto: found new whitelisted currencies"
-          file_pattern:
-            "tokens.json"
-            # it's okay we always want our feat/new-whitelisted-tokens
-            # to be the most up to date
-          push_options: "--force"
-          create_branch: true
-          branch: feat/new-whitelisted-tokens
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           title: "feat: New whitelisted tokens found!"
+          commit-message: "auto: added new whitelisted currencies"
+          base: master
+          branch: feat/new-whitelisted-tokens
           body: |
             🤖 _This pull-request was opened by a robot beep boop._ 🤖
