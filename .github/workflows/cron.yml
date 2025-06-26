@@ -1,0 +1,44 @@
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *" # once a day at 9am
+
+jobs:
+  fetch-tokens-and-open-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          registry-url: "https://registry.npmjs.org"
+          scope: "@celo"
+
+      - run: bun install
+
+      - name: Fetch data
+        id: fetch_data
+        run: |
+          bun run fetch-token-list
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "auto: found new whitelisted currencies"
+          file_pattern:
+            "tokens.json"
+            # it's okay we always want our feat/new-whitelisted-tokens
+            # to be the most up to date
+          push_options: "--force"
+          branch: feat/new-whitelisted-tokens
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: feat/new-whitelisted-tokens
+          title: "feat: New whitelisted tokens found!"
+          body: |
+            🤖 _This pull-request was opened by a robot beep boop._ 🤖
+          team-reviewers: celo-org/devtooling

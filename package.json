@@ -1,11 +1,20 @@
 {
   "name": "@celo/ledger-token-signer",
   "version": "0.4.0",
-  "main": "lib/data.js",
   "license": "MIT",
+  "main": "lib/cjs/index.js",
+  "module": "lib/mjs/index.js",
+  "types": "lib/mjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/cjs/data.d.ts",
+      "import": "./lib/mjs/data.js",
+      "require": "./lib/cjs/data.js"
+    }
+  },
   "dependencies": {},
   "devDependencies": {
-    "@celo/abis": "^11.0.0",
+    "@celo/abis": "^12.0.3",
     "@google-cloud/kms": "^4.4.0",
     "@ledgerhq/hw-app-eth": "6.36.0",
     "@ledgerhq/hw-transport-node-hid": "^6.28.6",
@@ -14,21 +23,28 @@
     "@types/elliptic": "^6.4.12",
     "@types/node": "^13.11.0",
     "@types/secp256k1": "^4.0.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.0.0"
+    "typescript": "^5.8.3",
+    "viem": "^2.31.4",
+    "@celo/actions": "^0.0.1-beta.3"
   },
   "files": [
     "lib"
   ],
   "scripts": {
-    "sign-hsm": "ts-node ./src/sign_hsm.ts",
-    "sign-local": "ts-node ./src/sign_local.ts",
-    "sign-on-device": "ts-node ./src/sign_on_device.ts",
+    "fetch-token-list": "bun ./src/fetch_token_list.ts",
+    "sign-hsm": "bun ./src/sign_hsm.ts",
+    "sign-local": "bun ./src/sign_local.ts",
+    "sign-on-device": "bun ./src/sign_on_device.ts",
     "check-key-exists": "test -f key.pem || (echo \"./key.pem not detected\" && exit 1)",
-    "export-key": "yarn check-key-exists && openssl ec -in key.pem -text -noout -out priv-pub-key",
-    "verify-key": "yarn check-key-exists && test -f key.pem && openssl ec -in key.pem -pubout -out lib/pubkey.pem && test -z \"$(git status --porcelain lib/pubkey.pem)\" && echo \"All good!\" || echo \"Public key changed, are you sure what you're doing is correct?\"",
-    "print-data-blob": "ts-node ./src/print_data_blob.ts",
-    "build": "yarn run tsc -b ."
+    "export-key": "bun check-key-exists && openssl ec -in key.pem -text -noout -out priv-pub-key",
+    "verify-key": "bun check-key-exists && test -f key.pem && openssl ec -in key.pem -pubout -out lib/pubkey.pem && test -z \"$(git status --porcelain lib/pubkey.pem)\" && echo \"All good!\" || echo \"Public key changed, are you sure what you're doing is correct?\"",
+    "print-data-blob": "bun ./src/print_data_blob.ts",
+    "build": "bun build:cjs && bun build:mjs",
+    "build:cjs": "rm -rf lib/cjs && bun tsc -p tsconfig-cjs.json",
+    "build:mjs": "rm -rf lib/mjs && bun tsc -p tsconfig.json",
+    "postbuild": "bun ./scripts/post-build.ts"
   },
-  "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
+  "engines": {
+    "node": ">=20"
+  }
 }
