@@ -63,9 +63,9 @@ jobs:
         run: echo "NPM_VERSION=$(npm version minor --no-git-tag-version)" >> $GITHUB_OUTPUT
 
       - name: Publish
-        run: npm publish --access public --tag next
+        run: bun publish --access public --tag next
         env:
-          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
