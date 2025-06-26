@@ -28,6 +28,7 @@ jobs:
         id: fetch_data
         run: |
           bun run fetch-token-list
+          git diff
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
