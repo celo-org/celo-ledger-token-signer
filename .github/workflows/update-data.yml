@@ -63,7 +63,7 @@ jobs:
         run: echo "NPM_VERSION=$(npm version minor --no-git-tag-version)" >> $GITHUB_OUTPUT
 
       - name: Publish
-        run: bun publish --access public
+        run: bun publish --access public --tag next
         env:
           NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
 
