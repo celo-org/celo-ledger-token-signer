@@ -35,6 +35,7 @@ jobs:
             # it's okay we always want our feat/new-whitelisted-tokens
             # to be the most up to date
           push_options: "--force"
+          create_branch: true
           branch: feat/new-whitelisted-tokens
 
       - name: Create Pull Request
