@@ -1,7 +1,14 @@
 import { feeCurrencyDirectoryABI } from "@celo/abis";
 import { writeFileSync } from "fs";
 
-import { Address, createPublicClient, erc20Abi, http } from "viem";
+import {
+  Address,
+  createPublicClient,
+  erc20Abi,
+  http,
+  PublicClient,
+  Transport,
+} from "viem";
 import { celo, celoAlfajores } from "viem/chains";
 import { resolveAddress } from "@celo/actions";
 import { celoBaklava } from "./viem/chains/definitions/celoBaklava";
@@ -53,23 +60,10 @@ const USDT_ADAPTER_TOKEN_ABI = [
   },
 ] as const;
 
-const celoClient = createPublicClient({
-  chain: celo,
-  transport: http(),
-  batch: { multicall: true },
-});
-const alfajoresClient = createPublicClient({
-  chain: celoAlfajores,
-  transport: http(),
-  batch: { multicall: true },
-});
-const baklavaClient = createPublicClient({
-  chain: celoBaklava,
-  transport: http(),
-  batch: { multicall: true },
-});
-
-type Client = typeof celoClient | typeof alfajoresClient | typeof baklavaClient;
+type Client = PublicClient<
+  Transport,
+  typeof celo | typeof celoAlfajores | typeof celoBaklava
+>;
 
 function formatTicker(chain: number, ticker: string): string {
   switch (chain) {
@@ -210,10 +204,20 @@ async function fetchErc20TokenInfo(
   };
 }
 
+// NOTE: simply add here new chains if necessary *wink* sepolia *wink*
+const chains = [celo, celoAlfajores, celoBaklava] as const;
 async function main() {
+  const clients = chains.map((chain) =>
+    createPublicClient({
+      chain,
+      transport: http(),
+      batch: { multicall: true },
+    })
+  );
+
   const tokens = (
     await Promise.all(
-      [celoClient, alfajoresClient, baklavaClient].map(async (client) => {
+      clients.map(async (client) => {
         const whitelistAddress = await resolveAddress(
           client,
           "FeeCurrencyDirectory"
@@ -235,17 +239,13 @@ async function main() {
                   functionName: "adaptedToken",
                 })
                 .then((adaptedTokenAddress) => [adaptedTokenAddress, true])
-                .catch((_) => {
-                  return client
-                    .readContract({
-                      address,
-                      abi: USDT_ADAPTER_TOKEN_ABI,
-                      functionName: "getAdaptedToken",
-                    })
-                    .then((adaptedTokenAddress) => [
-                      adaptedTokenAddress,
-                      false,
-                    ]);
+                .catch(async (_) => {
+                  const adaptedTokenAddress = await client.readContract({
+                    address,
+                    abi: USDT_ADAPTER_TOKEN_ABI,
+                    functionName: "getAdaptedToken",
+                  });
+                  return [adaptedTokenAddress, false];
                 })
                 .catch((_) => {
                   return null;
@@ -261,6 +261,7 @@ async function main() {
                   ? fetchAdaptedTokenInfo(client, address, adaptedTokenAddress)
                   : fetchUSDTTokenInfo(client, address, adaptedTokenAddress));
               } catch (e) {
+                // make sure to throw on mainnet, this should always work!
                 if (client.chain === celo) {
                   throw e;
                 }
