@@ -43,6 +43,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
+          base: master
           branch: feat/new-whitelisted-tokens
           title: "feat: New whitelisted tokens found!"
           body: |
