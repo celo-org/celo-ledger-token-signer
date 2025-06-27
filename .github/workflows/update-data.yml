@@ -66,6 +66,7 @@ jobs:
         run: bun publish --access public --tag next
         env:
           NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
+          BUN_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
