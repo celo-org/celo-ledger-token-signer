@@ -9,7 +9,7 @@ import {
   PublicClient,
   Transport,
 } from "viem";
-import { celo, celoAlfajores } from "viem/chains";
+import { celo, celoAlfajores, celoSepolia } from "viem/chains";
 import { resolveAddress } from "@celo/actions";
 import { celoBaklava } from "./viem/chains/definitions/celoBaklava";
 import { Token } from "./utils";
@@ -71,6 +71,8 @@ function formatTicker(chain: number, ticker: string): string {
       return ticker;
     case celoAlfajores.id:
       return `a ${ticker}`;
+    case celoSepolia.id:
+      return `s ${ticker}`;
     case celoBaklava.id:
       return `b ${ticker}`;
   }
@@ -219,6 +221,7 @@ async function main() {
     await Promise.all(
       clients.map(async (client) => {
         const whitelistAddress = await resolveAddress(
+          // @ts-expect-error txs differ slightly
           client,
           "FeeCurrencyDirectory"
         );
