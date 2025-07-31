@@ -1,0 +1,27 @@
+name: CI checks
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+   
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          registry-url: "https://registry.npmjs.org"
+          scope: "@celo"
+
+      - run: bun install
+        
+      - run: bun run build
+
+      - run: bun run fetch-token-list
+      
