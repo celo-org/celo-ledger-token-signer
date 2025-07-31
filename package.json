@@ -15,17 +15,17 @@
   "dependencies": {},
   "devDependencies": {
     "@celo/abis": "^12.0.3",
-    "@google-cloud/kms": "^5.0.1",
+    "@celo/actions": "^0.0.1",
+    "@google-cloud/kms": "^5.1.0",
     "@ledgerhq/hw-app-eth": "6.36.0",
-    "@ledgerhq/hw-transport-node-hid": "^6.29.8",
-    "@noble/curves": "^1.9.2",
+    "@ledgerhq/hw-transport-node-hid": "^6.29.9",
+    "@noble/curves": "^1.9.6",
     "@noble/hashes": "^1.8.0",
     "@types/elliptic": "^6.4.18",
-    "@types/node": "^24.0.4",
+    "@types/node": "^24.1.0",
     "@types/secp256k1": "^4.0.6",
     "typescript": "^5.8.3",
-    "viem": "^2.31.4",
-    "@celo/actions": "^0.0.1-beta.3"
+    "viem": "^2.33.2"
   },
   "files": [
     "lib"
