@@ -137,7 +137,7 @@ async function fetchUSDTTokenInfo(
   address: Address,
   adaptedTokenAddress: Address
 ): Promise<[Token, Token]> {
-  const [adapterDecimals, tokenDecimals, symbol] = await client.multicall({
+  const [adapterDecimals, tokenDecimals] = await client.multicall({
     allowFailure: false,
     contracts: [
       {
@@ -150,23 +150,20 @@ async function fetchUSDTTokenInfo(
         abi: erc20Abi,
         functionName: "decimals",
       },
-      {
-        address: adaptedTokenAddress,
-        abi: erc20Abi,
-        functionName: "symbol",
-      },
     ] as const,
   });
 
+  // NOTE: hardcode symbol because USD₮ isnt valid ascii and utf8 isn't
+  // supported on ledger display apparently
   return [
     {
-      ticker: symbol,
+      ticker: "USDT",
       address,
       decimals: adapterDecimals,
       chainId: client.chain.id,
     },
     {
-      ticker: symbol,
+      ticker: "USDT",
       address: adaptedTokenAddress,
       decimals: tokenDecimals,
       chainId: client.chain.id,
