@@ -114,7 +114,7 @@ export const parseNewData = (erc20SignaturesBlob: string) => {
     let j = 0;
     const tickerLength = item.readUInt8(j);
     j += 1;
-    const ticker = item.slice(j, j + tickerLength).toString("ascii");
+    const ticker = item.slice(j, j + tickerLength).toString("utf8");
     j += tickerLength;
     const contractAddress = asContractAddress(
       item.slice(j, j + 20).toString("hex")
@@ -154,7 +154,7 @@ export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    const ticker = Buffer.from(token.ticker, "ascii");
+    const ticker = Buffer.from(token.ticker, "utf8");
 
     let bufLength = 0;
     bufLength += ticker.byteLength; // ticker length
@@ -165,7 +165,7 @@ export async function sign(sign: SignFn, pubKey: Hex, tokens: Token[]) {
     const msg = Buffer.alloc(bufLength, 0);
 
     let offset = 0;
-    msg.write(token.ticker, offset, "ascii");
+    msg.write(token.ticker, offset, "utf8");
     offset += ticker.byteLength;
     msg.write(token.address, offset, "hex");
     offset += CONTRACT_ADDRESS_BYTE_LENGTH;
