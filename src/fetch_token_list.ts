@@ -6,12 +6,12 @@ import {
   createPublicClient,
   erc20Abi,
   http,
+  InvalidAddressError,
   PublicClient,
   Transport,
 } from "viem";
 import { celo, celoAlfajores, celoSepolia } from "viem/chains";
 import { resolveAddress } from "@celo/actions";
-import { celoBaklava } from "./viem/chains/definitions/celoBaklava";
 import { Token } from "./utils";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
@@ -60,10 +60,7 @@ const USDT_ADAPTER_TOKEN_ABI = [
   },
 ] as const;
 
-type Client = PublicClient<
-  Transport,
-  typeof celo | typeof celoAlfajores | typeof celoBaklava
->;
+type Client = PublicClient<Transport, typeof celo | typeof celoSepolia>;
 
 function formatTicker(chain: number, ticker: string): string {
   switch (chain) {
@@ -73,8 +70,6 @@ function formatTicker(chain: number, ticker: string): string {
       return `a ${ticker}`;
     case celoSepolia.id:
       return `s ${ticker}`;
-    case celoBaklava.id:
-      return `b ${ticker}`;
   }
 
   throw new Error("unknown chain: " + chain);
@@ -96,41 +91,42 @@ function formatToken(token: Token): Token {
 
 async function fetchAdaptedTokenInfo(
   client: Client,
-  address: Address,
+  whitelistedAddress: Address,
   adaptedTokenAddress: Address
 ): Promise<[Token, Token]> {
-  const [adapterDecimals, tokenDecimals, symbol] = await client.multicall({
-    allowFailure: false,
-    contracts: [
-      {
-        address,
-        abi: STANDARD_ADAPTER_TOKEN_ABI,
-        functionName: "adapterDecimals",
-      },
-      {
-        address,
-        abi: STANDARD_ADAPTER_TOKEN_ABI,
-        functionName: "tokenDecimals",
-      },
-      {
-        address: adaptedTokenAddress,
-        abi: erc20Abi,
-        functionName: "symbol",
-      },
-    ] as const,
-  });
+  const [adapterDecimals, adaptedTokenDecimals, symbol] =
+    await client.multicall({
+      allowFailure: false,
+      contracts: [
+        {
+          address: whitelistedAddress,
+          abi: STANDARD_ADAPTER_TOKEN_ABI,
+          functionName: "adapterDecimals",
+        },
+        {
+          address: whitelistedAddress,
+          abi: STANDARD_ADAPTER_TOKEN_ABI,
+          functionName: "tokenDecimals",
+        },
+        {
+          address: adaptedTokenAddress,
+          abi: erc20Abi,
+          functionName: "symbol",
+        },
+      ] as const,
+    });
 
   return [
     {
       ticker: symbol,
-      address: address,
-      decimals: tokenDecimals,
+      address: whitelistedAddress,
+      decimals: adapterDecimals,
       chainId: client.chain.id,
     },
     {
       ticker: symbol,
       address: adaptedTokenAddress,
-      decimals: adapterDecimals,
+      decimals: adaptedTokenDecimals,
       chainId: client.chain.id,
     },
   ];
@@ -206,8 +202,7 @@ async function fetchErc20TokenInfo(
   };
 }
 
-// NOTE: simply add here new chains if necessary *wink* sepolia *wink*
-const chains = [celo, celoAlfajores, celoBaklava] as const;
+const chains = [celo, celoSepolia] as const;
 async function main() {
   const clients = chains.map((chain) =>
     createPublicClient({
@@ -221,7 +216,6 @@ async function main() {
     await Promise.all(
       clients.map(async (client) => {
         const whitelistAddress = await resolveAddress(
-          // @ts-expect-error txs differ slightly
           client,
           "FeeCurrencyDirectory"
         );
@@ -235,41 +229,48 @@ async function main() {
         return (
           await Promise.all(
             whitelistedAddresses.map(async (address) => {
-              const adaptedToken = (await client
-                .readContract({
-                  address,
-                  abi: STANDARD_ADAPTER_TOKEN_ABI,
-                  functionName: "adaptedToken",
-                })
-                .then((adaptedTokenAddress) => [adaptedTokenAddress, true])
-                .catch(async (_) => {
-                  const adaptedTokenAddress = await client.readContract({
+              try {
+                const adaptedTokenStandard = await client
+                  .readContract({
+                    address,
+                    abi: STANDARD_ADAPTER_TOKEN_ABI,
+                    functionName: "adaptedToken",
+                  })
+                  .catch(() => null);
+
+                if (adaptedTokenStandard) {
+                  return await fetchAdaptedTokenInfo(
+                    client,
+                    address,
+                    adaptedTokenStandard
+                  );
+                }
+
+                const adaptedTokenUSDT = await client
+                  .readContract({
                     address,
                     abi: USDT_ADAPTER_TOKEN_ABI,
                     functionName: "getAdaptedToken",
-                  });
-                  return [adaptedTokenAddress, false];
-                })
-                .catch((_) => {
-                  return null;
-                })) as [Address, boolean] | null;
+                  })
+                  .catch(() => null);
 
-              if (!adaptedToken) {
-                return fetchErc20TokenInfo(client, address);
-              }
-              const [adaptedTokenAddress, isStandard] = adaptedToken;
+                if (adaptedTokenUSDT) {
+                  return await fetchUSDTTokenInfo(
+                    client,
+                    address,
+                    adaptedTokenUSDT
+                  );
+                }
 
-              try {
-                return await (isStandard
-                  ? fetchAdaptedTokenInfo(client, address, adaptedTokenAddress)
-                  : fetchUSDTTokenInfo(client, address, adaptedTokenAddress));
+                return await fetchErc20TokenInfo(client, address);
               } catch (e) {
                 // make sure to throw on mainnet, this should always work!
                 if (client.chain === celo) {
                   throw e;
                 }
-                // there's a couple of outdated tokens on alfajores that won't fit the correct
+                // there's a couple of outdated tokens on testnets that won't fit the correct
                 // adapter token contract...
+                // eg: 0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B
                 return [];
               }
             })
