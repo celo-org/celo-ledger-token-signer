@@ -10,7 +10,7 @@ import {
   PublicClient,
   Transport,
 } from "viem";
-import { celo, celoAlfajores, celoSepolia } from "viem/chains";
+import { celo, celoSepolia } from "viem/chains";
 import { resolveAddress } from "@celo/actions";
 import { Token } from "./utils";
 import { fileURLToPath } from "url";
@@ -66,8 +66,6 @@ function formatTicker(chain: number, ticker: string): string {
   switch (chain) {
     case celo.id:
       return ticker;
-    case celoAlfajores.id:
-      return `a ${ticker}`;
     case celoSepolia.id:
       return `s ${ticker}`;
   }
