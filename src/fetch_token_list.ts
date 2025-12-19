@@ -223,11 +223,11 @@ async function fetchCeloTokensFromTokenList(): Promise<Token[]> {
   const res = await fetch(CELO_TOKEN_LIST_GITHUB_URL);
   const json = (await res.json()) as CeloTokenList;
 
-  return json.tokens.map(({ address, chainId, decimals, name }) => ({
+  return json.tokens.map(({ address, chainId, decimals, symbol }) => ({
     address,
     chainId,
     decimals,
-    ticker: name,
+    ticker: symbol,
   }));
 }
 
@@ -243,8 +243,9 @@ async function main() {
 
   const tokens: Token[] = (
     await Promise.all([
-      fetchCeloTokensFromTokenList(),
+      // whitelist first so that token list doenst overwrite.
       ...clients.map(async (client) => fetchWhitelistedTokens(client)),
+      fetchCeloTokensFromTokenList(),
     ])
   )
     .flat()
