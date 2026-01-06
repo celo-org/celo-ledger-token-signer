@@ -67,9 +67,9 @@ jobs:
 
       - name: Publish
         run: bun publish --access public
-#       env:
-#          NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
-#          BUN_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+       env:
+          NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
+          BUN_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
