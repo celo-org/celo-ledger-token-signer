@@ -65,11 +65,17 @@ jobs:
         id: bump_version
         run: echo "NPM_VERSION=$(npm version minor --no-git-tag-version)" >> $GITHUB_OUTPUT
 
+      - name: Configure npm auth
+        run: |
+         echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish
         run: bun publish --access public
-        env:
-          NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
-          BUN_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+#        env:
+#          NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
+#          BUN_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
