@@ -23,22 +23,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get NPM Token from Akeyless
-        id: get_npmjs_token
-        uses: docker://us-west1-docker.pkg.dev/devopsre/akeyless-public/akeyless-action:latest
+      - uses: actions/setup-node@v4
         with:
-          api-url: https://api.gateway.akeyless.celo-networks-dev.org
-          access-id: p-kf9vjzruht6l
-          static-secrets: |
-            {
-                "/static-secrets/NPM/npm-publish-token": "NPM_TOKEN"
-            }
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+          scope: "@celo"
+
+      # - name: Get NPM Token from Akeyless
+      #   id: get_npmjs_token
+      #   uses: docker://us-west1-docker.pkg.dev/devopsre/akeyless-public/akeyless-action:latest
+      #   with:
+      #     api-url: https://api.gateway.akeyless.celo-networks-dev.org
+      #     access-id: p-kf9vjzruht6l
+      #     static-secrets: |
+      #       {
+      #           "/static-secrets/NPM/npm-publish-token": "NPM_TOKEN"
+      #       }
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-          registry-url: "https://registry.npmjs.org"
-          scope: "@celo"
+          # registry-url: "https://registry.npmjs.org"
+          # scope: "@celo"
 
       - run: bun install
 
@@ -66,10 +72,13 @@ jobs:
         run: echo "NPM_VERSION=$(npm version minor --no-git-tag-version)" >> $GITHUB_OUTPUT
 
       - name: Publish
-        run: bun publish --access public
-        env:
-          NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
-          BUN_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+        run: npm publish --access public 
+
+      # - name: Publish
+      #   run: bun publish --access public
+      #   env:
+      #     NPM_CONFIG_TOKEN: ${{ env.NPM_TOKEN }}
+      #     BUN_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
 
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
